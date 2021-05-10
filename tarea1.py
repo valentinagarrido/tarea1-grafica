@@ -26,8 +26,12 @@ from model import *
 __author__ = "Daniel Calderon"
 __license__ = "MIT"
 
+
+t_total = 60
 Z = 1
-T = 2
+H = 2
+T = 4
+P = 0.5
 
 # A class to store the application control
 class Controller:
@@ -37,6 +41,9 @@ class Controller:
         self.is_down_pressed = False
         self.is_left_pressed = False
         self.is_right_pressed = False
+        self.is_v_pressed = False
+        self.end = False
+        self.completed = False
 
 
 # global controller as communication with the callback function
@@ -78,6 +85,12 @@ def on_key(window, key, scancode, action, mods):
             controller.is_down_pressed = True
         elif action == glfw.RELEASE:
             controller.is_down_pressed = False
+            
+    elif key == glfw.KEY_V:
+        if action ==glfw.PRESS:
+            controller.is_v_pressed = True
+        elif action == glfw.RELEASE:
+            controller.is_v_pressed = False
     else:
         print('Unknown key')
 
@@ -91,7 +104,7 @@ if __name__ == "__main__":
     width = 600
     height = 600
 
-    window = glfw.create_window(width, height, "Textured Quad", None, None)
+    window = glfw.create_window(width, height, "Beauchefville", None, None)
 
     if not window:
         glfw.terminate()
@@ -104,6 +117,7 @@ if __name__ == "__main__":
 
 
     # Pipeline para dibujar shapes con texturas
+    pipeline = es.SimpleTransformShaderProgram()
     tex_pipeline = es.SimpleTextureTransformShaderProgram()
     
 
@@ -154,29 +168,94 @@ if __name__ == "__main__":
     gpuZombie.texture = es.textureSimpleSetup(
         getAssetPath("zombie.png"), GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR)
 
+    #zombieNode = sg.SceneGraphNode("zombie")
+    #zombieNode.childs = [gpuZombie]
+
     zombiesNode = sg.SceneGraphNode("zombies")
     zombiesList = []
+    
+    human = bs.createTextureQuad(1, 1)
+    gpuHuman = es.GPUShape().initBuffers()
+    tex_pipeline.setupVAO(gpuHuman)
+    gpuHuman.fillBuffers(human.vertices, human.indices, GL_STATIC_DRAW)
+    gpuHuman.texture = es.textureSimpleSetup(
+        getAssetPath("boy.png"), GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR)
+
+    #humanNode = sg.SceneGraphNode("human")
+    #humanNode.childs = [gpuHuman]
+
+    humansNode = sg.SceneGraphNode("humans")
+    humansList = []
+    
+    sickHuman = bs.createTextureQuad(1, 1)
+    gpuSickHuman = es.GPUShape().initBuffers()
+    tex_pipeline.setupVAO(gpuSickHuman)
+    gpuSickHuman.fillBuffers(sickHuman.vertices, sickHuman.indices, GL_STATIC_DRAW)
+    gpuSickHuman.texture = es.textureSimpleSetup(
+        getAssetPath("sickboy.png"), GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR)
+
+    sickHumansNode = sg.SceneGraphNode("sickHumans")
 
     sceneNode = sg.SceneGraphNode("world")
-    sceneNode.childs = [fullBackgroundNode, hinataNode]
+    sceneNode.childs = [fullBackgroundNode, hinataNode, zombiesNode, humansNode]
 
-    player = Hinata(0.2)
+    player = Hinata(0.2, P)
     player.set_model(hinataNode)
     player.set_controller(controller)
     
     movingBackground = Background()
     movingBackground.set_model(fullBackgroundNode)
 
+    end = bs.createTextureQuad(1, 1)
+    gpuEnd = es.GPUShape().initBuffers()
+    tex_pipeline.setupVAO(gpuEnd)
+    gpuEnd.fillBuffers(end.vertices, end.indices, GL_STATIC_DRAW)
+    gpuEnd.texture = es.textureSimpleSetup(
+        getAssetPath("end.jpg"), GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR)
 
+    endNode = sg.SceneGraphNode("end")
+    endNode.transform = tr.scale(2,2,1)
+    endNode.childs = [gpuEnd]
+    
+    win = bs.createTextureQuad(1, 1)
+    gpuWin = es.GPUShape().initBuffers()
+    tex_pipeline.setupVAO(gpuWin)
+    gpuWin.fillBuffers(win.vertices, win.indices, GL_STATIC_DRAW)
+    gpuWin.texture = es.textureSimpleSetup(
+        getAssetPath("win.jpg"), GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR)
+
+    winNode = sg.SceneGraphNode("win")
+    winNode.transform = tr.scale(2,2,1)
+    winNode.childs = [gpuWin]
+    
+    store = bs.createTextureQuad(1, 1)
+    gpuStore = es.GPUShape().initBuffers()
+    tex_pipeline.setupVAO(gpuStore)
+    gpuStore.fillBuffers(store.vertices, store.indices, GL_STATIC_DRAW)
+    gpuStore.texture = es.textureSimpleSetup(
+        getAssetPath("store.png"), GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR)
+    
+    storeNode = sg.SceneGraphNode("store")
+    storeNode.transform = tr.scale(0.3,0.75,1)
+    storeNode.childs = [gpuStore]
+    
+    realStore = Store()
+    realStore.set_model(storeNode)
+    realStore.update()
+    
     perfMonitor = pm.PerformanceMonitor(glfw.get_time(), 0.5)
     # glfw will swap buffers as soon as possible
     glfw.swap_interval(0)    
     t0 = glfw.get_time()
     
+    
+    
     while not glfw.window_should_close(window):
         t1 = glfw.get_time()
         delta = t1 -t0
         t0 = t1
+        if t0 >= t_total:
+            controller.completed = True
         # Using GLFW to check for input events
         glfw.poll_events()
 
@@ -187,39 +266,76 @@ if __name__ == "__main__":
 
         # Clearing the screen in both, color and depth
         glClear(GL_COLOR_BUFFER_BIT)
-        
-        movingBackground.update(delta)
+        if (not controller.end) and (not controller.completed):
+            movingBackground.update(delta)
         player.update(delta)
         
-        if t0%T < 0.05:
-            counter = 0
+        if (t0%T < 0.002) and (not controller.end) and (not controller.completed):
             print(t0)
             for i in range(Z):
-                zombieNode = sg.SceneGraphNode("zombie"+str(i))
+                zombieNode = sg.SceneGraphNode("zombie")
                 zombieNode.childs = [gpuZombie]
                 zombiesNode.childs += [zombieNode]
                 z = Zombie(0.2)
                 z.set_model(zombieNode)
                 zombiesList += [z]
+                print("new zombie")
+            for i in range(H):
+                humanNode = sg.SceneGraphNode("human")
+                humanNode.childs = [gpuHuman]
+                humansNode.childs += [humanNode]
+                h = Human(0.2, P)
+                h.set_model(humanNode)
+                h.set_status()
+                humansList += [h]
+                print("new human")
+            
                 
-        if zombiesList != []:
-            for z in zombiesList:
-                z.update(delta)
+        for z in zombiesList:
+            z.update(delta)           
                 
+        for h in humansList:
+            if h.status == "Dead":
+                print("human turned to zombie")
+                zombieNode = sg.SceneGraphNode("zombie")
+                zombieNode.childs = [gpuZombie]
+                zombiesNode.childs += [zombieNode]
+                humansNode.childs.remove(h.model)
+                h.set_model(zombieNode)
+                humansList.remove(h)
+                zombiesList += [h]
+            h.update(delta)
 
-        sceneNode.childs += [zombiesNode]
-        # Telling OpenGL to use our shader program
-        glUseProgram(tex_pipeline.shaderProgram)
                 
-        # Se dibuja el grafo de escena con texturas
-        glUseProgram(tex_pipeline.shaderProgram)
         
+        #sceneNode.childs += [zombiesNode, humansNode]
+        player.collision(zombiesList + humansList)
+        if player.status == "Dead":
+            # Se dibuja el grafo de escena con texturas
+            controller.end = True
+        
+        glUseProgram(tex_pipeline.shaderProgram)
+            
         sg.drawSceneGraphNode(sceneNode, tex_pipeline, "transform")
         
+        if controller.end:
+            sg.drawSceneGraphNode(endNode, tex_pipeline, "transform")
+        elif controller.completed:
+            sg.drawSceneGraphNode(storeNode, tex_pipeline, "transform")
+            player.collision([realStore])
+            if player.status == "Won":
+                sg.drawSceneGraphNode(winNode, tex_pipeline, "transform")
+
+
+                    
+            
         # Once the render is done, buffers are swapped, showing only the complete scene.
         glfw.swap_buffers(window)
     
     # freeing GPU memory
     sceneNode.clear()
+    endNode.clear()
+    winNode.clear()
+    storeNode.clear()
 
     glfw.terminate()
