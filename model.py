@@ -41,10 +41,10 @@ class Hinata():
         if self.controller.is_left_pressed and self.pos[0] > -0.5:
             self.pos[0] -= delta
         # Si detecta la tecla [up] presionada
-        if self.controller.is_up_pressed:
+        if self.controller.is_up_pressed and self.pos[1] <= 1:
             self.pos[1] += delta
         # Si detecta la tecla [down] presionada
-        if self.controller.is_down_pressed:
+        if self.controller.is_down_pressed and self.pos[1] >= -1:
             self.pos[1] -= delta
         #print(self.pos[0], self.pos[1])
 
@@ -53,7 +53,7 @@ class Hinata():
         if self.status == "Infected":
             self.life -= self.P*delta
         if self.life <= 0:
-            self.status == "Dead"
+            self.status = "Dead"
             
     def collision(self, enemies):
         # Funcion para detectar las colisiones con las cargas
@@ -83,7 +83,7 @@ class Zombie():
     def __init__(self,size):
         self.size = size
         self.model = None
-        self.pos = [random()-0.5,random()*0.3+0.7]
+        self.pos = [random()-0.5,random()*0.4+0.6]
         self.radio = 0.1
         self.status = "Dead"
         
@@ -127,7 +127,7 @@ class Human():
 class Store():
     def __init__(self):
         self.model = None
-        self.pos = [-0.9, 0.8]
+        self.pos = [-0.78, 0.7]
         self.radio = 0.3
         self.status = "Won"
         
