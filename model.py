@@ -99,7 +99,7 @@ class Human():
     def __init__(self,size,P):
         self.size = size
         self.model = None
-        self.pos = [random()-0.5,random()*0.3+0.7]
+        self.pos = [random()-0.5,random()*0.4+0.6]
         self.radio = 0.1
         self.status = None
         self.life = 1

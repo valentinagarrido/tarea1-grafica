@@ -191,7 +191,7 @@ if __name__ == "__main__":
     sceneNode.childs = [fullBackgroundNode, hinataNode, zombiesNode, humansNode]
 
     # se crea modelo de Hinata y se le setea modelo y controlador
-    player = Hinata(0.2, P)
+    player = Hinata(0.2, P/T)
     player.set_model(hinataNode)
     player.set_controller(controller)
     
@@ -304,8 +304,9 @@ if __name__ == "__main__":
         # si el tiempo corresponde y el jeugo continúa, se crean Z zombies y H humanos
         # se crean modelos para zombies y humanos y se agregan a las listas
         
-        if (t0%T < 0.0015) and (not controller.end) and (not controller.completed):
-            print(t0)
+        if (t0%T < 0.0015
+            ) and (not controller.end) and (not controller.completed):
+
             for i in range(Z):
                 zombieNode = sg.SceneGraphNode("zombie")
                 zombieNode.childs = [gpuZombie]
@@ -317,7 +318,7 @@ if __name__ == "__main__":
                 humanNode = sg.SceneGraphNode("human")
                 humanNode.childs = [gpuHuman]
                 humansNode.childs += [humanNode]
-                h = Human(0.2, P)
+                h = Human(0.2, P/T)
                 h.set_model(humanNode)
                 h.set_status()
                 humansList += [h]
